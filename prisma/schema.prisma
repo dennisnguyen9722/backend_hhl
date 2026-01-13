@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+}
+
+model AdminUser {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(ADMIN)
+  isActive  Boolean  @default(true)
+
+  avatar    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditLogs AuditLog[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  brands    BrandCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BrandCategory {
+  brandId    String
+  categoryId String
+
+  brand    Brand    @relation(fields: [brandId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@id([brandId, categoryId])
+}
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  isActive  Boolean  @default(true)
+  deletedAt DateTime?
+
+  categories BrandCategory[]   // 👈 THÊM
+  collections Collection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Collection {
+  id        String   @id @default(uuid())
+  brandId   String
+
+  name      String
+  slug      String
+  isActive  Boolean  @default(true)
+  deletedAt DateTime?
+  coverImage String? 
+
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  images    Image[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pdfFile   String?
+  pdfLink   String?
+  downloadCount Int      @default(0)
+
+  @@unique([brandId, slug]) // slug unique trong phạm vi 1 brand
+}
+
+model Image {
+  id           String   @id @default(uuid())
+  collectionId String
+
+  title        String?
+  imageUrl     String
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  deletedAt DateTime?
+
+  collection   Collection @relation(fields: [collectionId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([collectionId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  adminId  String
+
+  admin    AdminUser @relation(fields: [adminId], references: [id])
+
+  action   String
+  entity   String
+  entityId String
+
+  payload  Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([entity, entityId])
+}
+
+model Banner {
+  id        String   @id @default(uuid())
+  title     String?
+  imageUrl  String
+  linkUrl   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AboutPage {
+  id        String   @id @default(uuid())
+  title     String
+  summary   String?
+  content   String
+  imageUrl  String?
+  seoTitle  String?
+  seoDesc   String?
+  updatedAt DateTime @updatedAt
+}
+
+model ContactPage {
+  id          String   @id @default(uuid())
+  companyName String
+  address     String?
+  phone       String?
+  email       String?
+  mapEmbed    String?
+  facebookUrl String?
+  seoTitle    String?
+  seoDesc     String?
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteSetting {
+  id        Int      @id @default(1)
+  siteName  String
+  logo      String?
+  favicon   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

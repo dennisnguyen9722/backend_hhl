@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const admin_user_controller_1 = require("../controllers/admin-user.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const permission_middleware_1 = require("../middlewares/permission.middleware");
+const upload_avatar_middleware_1 = require("../middlewares/upload-avatar.middleware");
+const router = (0, express_1.Router)();
+router.get('/', auth_middleware_1.requireAuth, (0, permission_middleware_1.requirePermission)('admin-user.read'), admin_user_controller_1.AdminUserController.list);
+router.post('/', auth_middleware_1.requireAuth, (0, permission_middleware_1.requirePermission)('admin-user.create'), admin_user_controller_1.AdminUserController.create);
+router.patch('/me/password', auth_middleware_1.requireAuth, admin_user_controller_1.AdminUserController.changePassword);
+router.patch('/me/avatar', auth_middleware_1.requireAuth, upload_avatar_middleware_1.uploadAvatar.single('avatar'), admin_user_controller_1.AdminUserController.updateAvatar);
+router.patch('/me/profile', auth_middleware_1.requireAuth, admin_user_controller_1.AdminUserController.updateProfile);
+router.patch('/:id', auth_middleware_1.requireAuth, (0, permission_middleware_1.requirePermission)('admin-user.update'), admin_user_controller_1.AdminUserController.update);
+exports.default = router;
