@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import * as imageService from '../services/image.service'
 import { prisma } from '../lib/prisma'
+import { uploadToCloudinary } from '../utils/cloudinary-upload'
 
 /**
  * GET /collections/:collectionId/images?page=&limit=
@@ -22,12 +23,6 @@ export async function getImagesByCollection(req: Request, res: Response) {
     limit
   )
 
-  /**
-   * result = {
-   *   data: Image[],
-   *   pagination: { page, limit, total, totalPages }
-   * }
-   */
   return res.json(result)
 }
 
@@ -55,8 +50,14 @@ export async function createImage(req: Request, res: Response) {
     return res.status(404).json({ message: 'Collection not found' })
   }
 
-  // ✅ TẠO imageUrl
-  const imageUrl = `catalog/${collection.brand.slug}/${collection.slug}/${req.file.filename}`
+  // ✅ UPLOAD LÊN CLOUDINARY
+  const cloudinaryResult = await uploadToCloudinary(req.file.buffer, {
+    folder: `catalog/${collection.brand.slug}/${collection.slug}`,
+    resource_type: 'image'
+  })
+
+  // ✅ LƯU URL TỪ CLOUDINARY
+  const imageUrl = cloudinaryResult.secure_url
 
   // 🔥 LẤY sortOrder CUỐI
   const lastImage = await prisma.image.findFirst({
@@ -72,7 +73,7 @@ export async function createImage(req: Request, res: Response) {
     {
       collectionId,
       imageUrl,
-      sortOrder: nextSortOrder, // ✅ FIX Ở ĐÂY
+      sortOrder: nextSortOrder,
       isActive: true
     },
     adminId

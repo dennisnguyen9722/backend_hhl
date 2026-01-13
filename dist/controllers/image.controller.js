@@ -39,6 +39,7 @@ exports.updateImage = updateImage;
 exports.deleteImage = deleteImage;
 const imageService = __importStar(require("../services/image.service"));
 const prisma_1 = require("../lib/prisma");
+const cloudinary_upload_1 = require("../utils/cloudinary-upload");
 /**
  * GET /collections/:collectionId/images?page=&limit=
  */
@@ -51,12 +52,6 @@ async function getImagesByCollection(req, res) {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = Math.min(parseInt(req.query.limit) || 25, 100);
     const result = await imageService.getImagesByCollection(collectionId, page, limit);
-    /**
-     * result = {
-     *   data: Image[],
-     *   pagination: { page, limit, total, totalPages }
-     * }
-     */
     return res.json(result);
 }
 /**
@@ -78,8 +73,13 @@ async function createImage(req, res) {
     if (!collection) {
         return res.status(404).json({ message: 'Collection not found' });
     }
-    // ✅ TẠO imageUrl
-    const imageUrl = `catalog/${collection.brand.slug}/${collection.slug}/${req.file.filename}`;
+    // ✅ UPLOAD LÊN CLOUDINARY
+    const cloudinaryResult = await (0, cloudinary_upload_1.uploadToCloudinary)(req.file.buffer, {
+        folder: `catalog/${collection.brand.slug}/${collection.slug}`,
+        resource_type: 'image'
+    });
+    // ✅ LƯU URL TỪ CLOUDINARY
+    const imageUrl = cloudinaryResult.secure_url;
     // 🔥 LẤY sortOrder CUỐI
     const lastImage = await prisma_1.prisma.image.findFirst({
         where: { collectionId },
@@ -90,7 +90,7 @@ async function createImage(req, res) {
     const image = await imageService.createImage({
         collectionId,
         imageUrl,
-        sortOrder: nextSortOrder, // ✅ FIX Ở ĐÂY
+        sortOrder: nextSortOrder,
         isActive: true
     }, adminId);
     return res.json(image);

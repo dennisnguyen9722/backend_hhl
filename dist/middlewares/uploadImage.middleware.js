@@ -5,22 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadImage = void 0;
 const multer_1 = __importDefault(require("multer"));
-const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
-const uploadDir = path_1.default.join(process.cwd(), 'uploads/brands');
-if (!fs_1.default.existsSync(uploadDir)) {
-    fs_1.default.mkdirSync(uploadDir, { recursive: true });
-}
-const storage = multer_1.default.diskStorage({
-    destination(_req, _file, cb) {
-        cb(null, uploadDir);
-    },
-    filename(_req, file, cb) {
-        const ext = path_1.default.extname(file.originalname);
-        const name = path_1.default.basename(file.originalname, ext);
-        cb(null, `${Date.now()}-${name}${ext}`);
-    }
-});
+const storage = multer_1.default.memoryStorage();
 exports.uploadImage = (0, multer_1.default)({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB

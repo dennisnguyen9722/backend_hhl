@@ -1,18 +1,17 @@
-import fs from 'fs'
 import path from 'path'
-import crypto from 'crypto' // ✅ BẮT BUỘC
 import AdmZip from 'adm-zip'
 import { prisma } from '../lib/prisma'
 import { writeAuditLog } from './audit-log.service'
+import { uploadToCloudinary } from '../utils/cloudinary-upload'
 
 type Input = {
-  zipPath: string
+  zipBuffer: Buffer // ✅ THAY ĐỔI: nhận buffer thay vì path
   collectionId: string
   adminId: string
 }
 
 export async function importCatalogZip({
-  zipPath,
+  zipBuffer,
   collectionId,
   adminId
 }: Input) {
@@ -23,16 +22,8 @@ export async function importCatalogZip({
 
   if (!collection) throw new Error('COLLECTION_NOT_FOUND')
 
-  const baseDir = path.join(
-    process.cwd(),
-    'uploads/catalog',
-    collection.brand.slug,
-    collection.slug
-  )
-
-  fs.mkdirSync(baseDir, { recursive: true })
-
-  const zip = new AdmZip(zipPath)
+  // ✅ GIẢI NÉN ZIP TỪ BUFFER
+  const zip = new AdmZip(zipBuffer)
   const entries = zip.getEntries()
 
   const lastImage = await prisma.image.findFirst({
@@ -50,13 +41,17 @@ export async function importCatalogZip({
     const ext = path.extname(entry.entryName).toLowerCase()
     if (!['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) continue
 
-    const filename = `${crypto.randomUUID()}${ext}`
-    const filePath = path.join(baseDir, filename)
+    // ✅ LẤY BUFFER CỦA FILE
+    const fileBuffer = entry.getData()
 
-    fs.writeFileSync(filePath, entry.getData())
+    // ✅ UPLOAD LÊN CLOUDINARY
+    const cloudinaryResult = await uploadToCloudinary(fileBuffer, {
+      folder: `catalog/${collection.brand.slug}/${collection.slug}`,
+      resource_type: 'image'
+    })
 
-    // ✅ CHỈ LƯU RELATIVE PATH (KHÔNG DOMAIN, KHÔNG /uploads)
-    const imageUrl = `catalog/${collection.brand.slug}/${collection.slug}/${filename}`
+    // ✅ LƯU URL TỪ CLOUDINARY
+    const imageUrl = cloudinaryResult.secure_url
 
     await prisma.image.create({
       data: {
@@ -69,8 +64,6 @@ export async function importCatalogZip({
 
     total++
   }
-
-  fs.unlinkSync(zipPath)
 
   await writeAuditLog({
     adminId,

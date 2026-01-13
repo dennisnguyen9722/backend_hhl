@@ -1,25 +1,8 @@
 import multer, { FileFilterCallback } from 'multer'
-import path from 'path'
-import fs from 'fs'
 import { Request } from 'express'
 
-const uploadDir = path.join(process.cwd(), 'uploads/avatars')
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true })
-}
-
-const storage = multer.diskStorage({
-  destination: (_req: Request, _file: Express.Multer.File, cb) => {
-    cb(null, uploadDir)
-  },
-
-  filename: (req: Request, file: Express.Multer.File, cb) => {
-    const admin = (req as any).admin
-    const ext = path.extname(file.originalname)
-    cb(null, `${admin.id}${ext}`)
-  }
-})
+// Dùng memory storage thay vì disk
+const storage = multer.memoryStorage()
 
 export const uploadAvatar = multer({
   storage,

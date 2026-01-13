@@ -9,7 +9,7 @@ async function uploadCatalogZipFile(req, res) {
     }
     const adminId = req.admin?.id;
     const result = await (0, image_zip_service_1.importCatalogZip)({
-        zipPath: req.file.path,
+        zipBuffer: req.file.buffer, // ✅ THAY ĐỔI: truyền buffer thay vì path
         collectionId,
         adminId
     });

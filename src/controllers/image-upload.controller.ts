@@ -11,7 +11,7 @@ export async function uploadCatalogZipFile(req: Request, res: Response) {
   const adminId = (req as any).admin?.id
 
   const result = await importCatalogZip({
-    zipPath: req.file.path,
+    zipBuffer: req.file.buffer, // ✅ THAY ĐỔI: truyền buffer thay vì path
     collectionId,
     adminId
   })
